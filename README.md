@@ -1,5 +1,9 @@
 # TaskTracker
 
+[![Test](https://github.com/0oda0/TaskTracker/actions/workflows/test.yml/badge.svg)](https://github.com/0oda0/TaskTracker/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Node](https://img.shields.io/badge/node-%3E%3D22.5-339933?logo=node.js&logoColor=white)
+
 Веб-таск-трекер для 2+ человек: разовые/повторяющиеся задачи по сферам (работа, физ. нагрузка, рутина, личное),
 взаимная видимость прогресса, передача задач другому человеку с его согласия, общий и личные списки покупок.
 
@@ -49,3 +53,7 @@ docker compose up -d --build
 - Дедлайн долга (вс 18:01) и "сегодня" везде — время сервера, без часовых поясов на пользователя.
 - `isQualifyingDay` в `src/debt-calc.js` сравнивает дату создания задачи (UTC) с локальными датами недели — минимальная погрешность возможна около полуночи.
 - Уведомления только внутри приложения (страница 🔔), без email/push.
+
+## Лицензия
+
+MIT — см. [LICENSE](LICENSE).
