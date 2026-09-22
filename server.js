@@ -22,6 +22,7 @@ app.use(attachUser);
 
 app.use("/", require("./src/routes/auth"));
 app.use("/", requireAuth, require("./src/routes/dashboard"));
+app.use("/friends", requireAuth, require("./src/routes/friends"));
 app.use("/tasks", requireAuth, require("./src/routes/tasks"));
 app.use("/transfers", requireAuth, require("./src/routes/transfers"));
 app.use("/shopping", requireAuth, require("./src/routes/shopping"));

@@ -3,7 +3,7 @@
 
 <% lists.forEach(({ list, items }) => { %>
   <section class="shopping-list">
-    <h2><%= list.name %> <% if (list.owner_id === null) { %><span class="tag">общий</span><% } %></h2>
+    <h2><%= list.name %> <% if (list.owner_id === null) { %><span class="tag tag-sky">общий с друзьями</span><% } %></h2>
     <ul class="item-list">
       <% items.forEach(item => { %>
         <li class="<%= item.is_bought ? 'bought' : '' %>">
@@ -26,9 +26,10 @@
   </section>
 <% }) %>
 
-<h2>Новый личный список</h2>
+<h2>Новый список</h2>
 <form method="post" action="/shopping/lists" class="inline-form">
   <input type="text" name="name" placeholder="Название списка" required>
+  <label class="checkbox-label"><input type="checkbox" name="shared" value="1"> общий с друзьями</label>
   <button type="submit">Создать</button>
 </form>
 <%- include('partials/footer') %>

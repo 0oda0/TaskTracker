@@ -62,10 +62,35 @@ CREATE TABLE IF NOT EXISTS task_transfers (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS friendships (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  requester_id INTEGER NOT NULL REFERENCES users(id),
+  addressee_id INTEGER NOT NULL REFERENCES users(id),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','declined')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(requester_id, addressee_id)
+);
+CREATE INDEX IF NOT EXISTS idx_friendships_addressee ON friendships(addressee_id, status);
+CREATE INDEX IF NOT EXISTS idx_friendships_requester ON friendships(requester_id, status);
+
+-- One row = user_id's own settings about friend_id: a personal label
+-- ("жена", "друг"...) and whether user_id allows friend_id to assign
+-- tasks to user_id. Asymmetric on purpose - both fields are always read
+-- from the assignee's/labeler's own row, never the other side's.
+CREATE TABLE IF NOT EXISTS friend_settings (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  friend_id INTEGER NOT NULL REFERENCES users(id),
+  tag TEXT,
+  can_assign INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, friend_id)
+);
+
+-- owner_id NULL = shared with created_by's friends (not a global list anymore).
 CREATE TABLE IF NOT EXISTS shopping_lists (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   owner_id INTEGER REFERENCES users(id),
+  created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -98,10 +123,5 @@ CREATE TABLE IF NOT EXISTS app_settings (
 const DEFAULT_SPHERES = ["Работа/учёба", "Физ. нагрузка", "Рутина", "Личное"];
 const insertSphere = db.prepare("INSERT OR IGNORE INTO spheres (name) VALUES (?)");
 for (const name of DEFAULT_SPHERES) insertSphere.run(name);
-
-const sharedList = db.prepare("SELECT id FROM shopping_lists WHERE owner_id IS NULL").get();
-if (!sharedList) {
-  db.prepare("INSERT INTO shopping_lists (name, owner_id) VALUES (?, NULL)").run("Общий список");
-}
 
 module.exports = db;

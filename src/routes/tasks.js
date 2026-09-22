@@ -35,6 +35,7 @@ router.get("/", (req, res) => {
   const onlyMine = req.query.mine === "1";
   const tasks = repo.listTasks({
     assigneeId: onlyMine ? req.user.id : null,
+    assigneeIds: onlyMine ? null : repo.visibleUserIds(req.user.id),
     sphereId,
     status: "active",
   });
@@ -49,15 +50,20 @@ router.get("/", (req, res) => {
 });
 
 router.get("/new", (req, res) => {
-  res.render("task-new", { spheres: repo.listSpheres(), users: repo.listUsers(), weekdays: WEEKDAYS, error: null, task: null });
+  res.render("task-new", { spheres: repo.listSpheres(), users: repo.listAssignableUsers(req.user.id), weekdays: WEEKDAYS, error: null, task: null });
 });
 
 router.post("/", (req, res) => {
+  const renderError = (msg) => res.status(400).render("task-new", {
+    spheres: repo.listSpheres(), users: repo.listAssignableUsers(req.user.id), weekdays: WEEKDAYS, error: msg, task: null,
+  });
+
   const { error, fields } = parseTaskFields(req.body);
-  if (error) {
-    return res.status(400).render("task-new", { spheres: repo.listSpheres(), users: repo.listUsers(), weekdays: WEEKDAYS, error, task: null });
-  }
+  if (error) return renderError(error);
+
   const assigneeId = Number(req.body.assignee_id) || req.user.id;
+  if (!repo.canAssignTo(req.user.id, assigneeId)) return renderError("Этот человек не разрешил вам назначать ему задачи");
+
   repo.createTask({ ...fields, createdBy: req.user.id, assigneeId });
   res.redirect("/tasks");
 });
@@ -83,7 +89,7 @@ router.post("/:id/edit", (req, res) => {
 
 router.get("/:id", (req, res) => {
   const task = repo.getTask(req.params.id);
-  if (!task) return res.status(404).render("404");
+  if (!task || !repo.areFriends(req.user.id, task.assignee_id)) return res.status(404).render("404");
   const now = new Date();
   const target = repo.effectiveTarget(task);
   const amount = repo.periodAmount(task.id, periodKey(task.period_type, now));
@@ -98,7 +104,7 @@ router.get("/:id", (req, res) => {
     history: repo.historyForTask(task, now, task.period_type === "monthly" ? 6 : task.period_type === "weekly" ? 8 : 14),
     isAssignee: task.assignee_id === req.user.id,
     isCreator: task.created_by === req.user.id,
-    otherUsers: repo.listUsers().filter((u) => u.id !== req.user.id),
+    otherUsers: repo.listFriends(req.user.id),
   });
 });
 
@@ -120,20 +126,24 @@ router.post("/:id/delete", (req, res) => {
   res.redirect("/tasks");
 });
 
-// Assignee offers the task to someone else.
+// Assignee offers the task to a friend.
 router.post("/:id/transfer/offer", (req, res) => {
   const task = repo.getTask(req.params.id);
   if (!task || task.assignee_id !== req.user.id) return res.status(403).send("Только исполнитель может передать задачу");
   const toUserId = Number(req.body.to_user_id);
-  if (!toUserId || toUserId === req.user.id) return res.status(400).send("Некорректный получатель");
+  if (!toUserId || toUserId === req.user.id || !repo.areFriends(req.user.id, toUserId)) {
+    return res.status(400).send("Можно передать только другу");
+  }
   repo.createTransfer({ taskId: task.id, direction: "offer", fromUserId: req.user.id, toUserId });
   res.redirect(`/tasks/${task.id}`);
 });
 
-// Someone else asks to take over the task from its current assignee.
+// A friend asks to take over the task from its current assignee.
 router.post("/:id/transfer/request", (req, res) => {
   const task = repo.getTask(req.params.id);
-  if (!task || task.assignee_id === req.user.id) return res.status(400).send("Вы уже исполнитель этой задачи");
+  if (!task || task.assignee_id === req.user.id || !repo.areFriends(req.user.id, task.assignee_id)) {
+    return res.status(400).send("Недоступно");
+  }
   repo.createTransfer({ taskId: task.id, direction: "request", fromUserId: req.user.id, toUserId: task.assignee_id });
   res.redirect(`/tasks/${task.id}`);
 });

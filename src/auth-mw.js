@@ -1,4 +1,4 @@
-const { getUserById, listIncomingTransfers, unreadNotificationCount } = require("./repo");
+const { getUserById, listIncomingTransfers, unreadNotificationCount, listIncomingFriendRequests } = require("./repo");
 
 function attachUser(req, res, next) {
   const userId = req.session && req.session.userId;
@@ -6,6 +6,7 @@ function attachUser(req, res, next) {
   res.locals.currentUser = req.user;
   res.locals.pendingTransferCount = req.user ? listIncomingTransfers(req.user.id).length : 0;
   res.locals.unreadNotifications = req.user ? unreadNotificationCount(req.user.id) : 0;
+  res.locals.pendingFriendRequests = req.user ? listIncomingFriendRequests(req.user.id).length : 0;
   res.locals.path = req.path;
   next();
 }

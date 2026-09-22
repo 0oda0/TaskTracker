@@ -13,26 +13,31 @@ router.get("/", (req, res) => {
 
 router.post("/lists", (req, res) => {
   const name = (req.body.name || "").trim();
-  if (name) repo.createShoppingList(name, req.user.id);
+  if (name) repo.createShoppingList(name, req.user.id, req.body.shared === "1");
   res.redirect("/shopping");
 });
 
 router.post("/lists/:id/items", (req, res) => {
   const list = repo.getShoppingList(req.params.id);
-  if (!list) return res.status(404).render("404");
-  if (list.owner_id !== null && list.owner_id !== req.user.id) return res.status(403).send("Это чужой список");
+  if (!list || !repo.canAccessShoppingList(req.user.id, list)) return res.status(404).render("404");
   const name = (req.body.name || "").trim();
   if (name) repo.addShoppingItem(list.id, name, req.user.id);
   res.redirect("/shopping");
 });
 
 router.post("/items/:id/toggle", (req, res) => {
-  repo.toggleShoppingItem(req.params.id);
+  const item = repo.getShoppingItem(req.params.id);
+  const list = item && repo.getShoppingList(item.list_id);
+  if (!list || !repo.canAccessShoppingList(req.user.id, list)) return res.status(404).render("404");
+  repo.toggleShoppingItem(item.id);
   res.redirect("/shopping");
 });
 
 router.post("/items/:id/delete", (req, res) => {
-  repo.deleteShoppingItem(req.params.id);
+  const item = repo.getShoppingItem(req.params.id);
+  const list = item && repo.getShoppingList(item.list_id);
+  if (!list || !repo.canAccessShoppingList(req.user.id, list)) return res.status(404).render("404");
+  repo.deleteShoppingItem(item.id);
   res.redirect("/shopping");
 });
 
