@@ -19,7 +19,7 @@
 <% if (currentUser) { %>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="/"><span class="brand-mark">✓</span>TaskTracker</a>
+    <a class="brand" href="/"><span class="brand-mark">✓</span><span class="brand-text">TaskTracker</span></a>
     <nav class="app-nav">
       <a href="/" class="<%= path === '/' ? 'active' : '' %>"><span class="nav-icon">🏠</span><span class="nav-label">Дашборд</span></a>
       <a href="/tasks" class="<%= path.startsWith('/tasks') ? 'active' : '' %>"><span class="nav-icon">✅</span><span class="nav-label">Задачи</span></a>
@@ -37,7 +37,7 @@
       <a href="/notifications" class="icon-btn <%= path.startsWith('/notifications') ? 'active' : '' %>" title="Уведомления">🔔<% if (unreadNotifications > 0) { %><span class="badge"><%= unreadNotifications %></span><% } %></a>
       <a href="/profile" class="icon-btn avatar avatar-<%= currentUser.avatar_color %> <%= path.startsWith('/profile') ? 'active' : '' %>" title="Профиль"><%= currentUser.display_name[0] %></a>
       <form action="/logout" method="post" class="logout-form">
-        <button type="submit" class="ghost-btn">Выйти</button>
+        <button type="submit" class="icon-btn" title="Выйти">⏻</button>
       </form>
     </div>
   </div>

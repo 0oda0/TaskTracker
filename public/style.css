@@ -73,12 +73,12 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.75rem 0; }
 .topbar-actions { display: flex; align-items: center; gap: 0.7rem; margin-left: auto; }
 .icon-btn {
   position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px;
-  border-radius: 12px; background: var(--card); color: var(--text); font-size: 1.05rem; text-decoration: none;
+  border-radius: 12px; border: none; padding: 0; background: var(--card); color: var(--text);
+  font-size: 1.05rem; font-family: inherit; text-decoration: none; cursor: pointer; flex-shrink: 0;
 }
 .icon-btn:hover { background: var(--surface); text-decoration: none; }
 .icon-btn.active { background: var(--surface); }
-.logout-form { display: flex; align-items: center; gap: 0.6rem; }
-.who { color: var(--muted); font-size: 0.85em; }
+.logout-form { display: flex; align-items: center; }
 
 .badge {
   background: var(--danger); color: #fff; border-radius: 999px; padding: 0 0.4em; font-size: 0.68em;
@@ -263,17 +263,30 @@ button.small, .button.small { padding: 0.32rem 0.75rem; font-size: 0.85em; }
 
 @media (max-width: 640px) {
   .container { padding-bottom: 5.5rem; }
-  .topbar-inner { flex-wrap: nowrap; }
+  .topbar-inner { flex-wrap: nowrap; padding-left: 0.6rem; padding-right: 0.6rem; }
+  .brand-text { display: none; }
+  .topbar-actions { gap: 0.3rem; }
+  .icon-btn { width: 34px; height: 34px; font-size: 0.95rem; }
+  .icon-btn.avatar { width: 34px; height: 34px; font-size: 0.85rem; }
   .app-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0;
     background: var(--bg-soft); border-top: 1px solid var(--border);
-    padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
-    justify-content: space-around;
+    padding: 0.35rem 0.1rem calc(0.35rem + env(safe-area-inset-bottom));
+    flex-wrap: nowrap;
   }
-  .app-nav a { flex-direction: column; gap: 0.15rem; padding: 0.3rem 0.4rem; border-radius: 10px; font-size: 0.68rem; }
-  .app-nav a .badge { position: absolute; top: -2px; right: -2px; }
+  .app-nav a {
+    flex: 1 1 0; min-width: 0; flex-direction: column; gap: 0.1rem; padding: 0.25rem 0.1rem;
+    border-radius: 10px; font-size: 0.6rem; white-space: nowrap; overflow: hidden;
+  }
+  .app-nav a .nav-icon { font-size: 1.05rem; }
+  .app-nav a .nav-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .app-nav a .badge { position: absolute; top: -2px; right: 6px; }
   .app-nav a.active { background: transparent; color: var(--accent); }
   .app-nav a:hover { background: transparent; }
   .field-row { flex-direction: column; gap: 0.9rem; }
   .tile-grid { grid-template-columns: 1fr 1fr; }
+  .inline-form { flex-wrap: wrap; }
+  .inline-form input[type="text"], .inline-form input[type="number"] { flex: 1 1 160px; }
+  .my-code { flex-wrap: wrap; }
+  .my-code span.muted { white-space: nowrap; }
 }
