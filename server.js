@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("node:path");
 const cookieSession = require("cookie-session");
-const { attachUser, requireAuth } = require("./src/auth-mw");
+const { attachUser, requireAuth, requireAdmin } = require("./src/auth-mw");
 const { checkWeeklyDebts } = require("./src/debt");
 
 const app = express();
@@ -28,6 +28,10 @@ app.use("/transfers", requireAuth, require("./src/routes/transfers"));
 app.use("/shopping", requireAuth, require("./src/routes/shopping"));
 app.use("/progress", requireAuth, require("./src/routes/progress"));
 app.use("/notifications", requireAuth, require("./src/routes/notifications"));
+app.use("/chat", requireAuth, require("./src/routes/chat"));
+app.use("/support", requireAuth, require("./src/routes/support"));
+app.use("/profile", requireAuth, require("./src/routes/profile"));
+app.use("/admin", requireAuth, requireAdmin, require("./src/routes/admin"));
 
 app.use((req, res) => res.status(404).render("404"));
 

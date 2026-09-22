@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<h1>Поддержка</h1>
+<p class="muted">Пишите сюда, если что-то не работает или есть вопрос — увидят администраторы.</p>
+
+<div class="chat-log">
+  <% if (!messages.length) { %><p class="muted">Сообщений пока нет.</p><% } %>
+  <% messages.forEach(m => { %>
+    <div class="chat-bubble <%= !m.from_admin ? 'mine' : '' %>">
+      <% if (m.from_admin) { %><span class="tag tag-violet">админ</span> <% } %>
+      <%= m.body %>
+      <span class="chat-time muted small"><%= m.created_at.slice(0, 16) %></span>
+    </div>
+  <% }) %>
+</div>
+
+<form method="post" action="/support/send" class="inline-form chat-form">
+  <input type="text" name="body" placeholder="Сообщение…" required autocomplete="off">
+  <button type="submit">Отправить</button>
+</form>
+<%- include('partials/footer') %>

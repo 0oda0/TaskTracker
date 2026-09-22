@@ -3,9 +3,13 @@ const repo = require("../repo");
 
 const router = express.Router();
 
+function friendsWithUnread(userId) {
+  return repo.listFriends(userId).map((f) => ({ ...f, unread: repo.unreadMessageCount(userId, f.id) }));
+}
+
 router.get("/", (req, res) => {
   res.render("friends", {
-    friends: repo.listFriends(req.user.id),
+    friends: friendsWithUnread(req.user.id),
     incoming: repo.listIncomingFriendRequests(req.user.id),
     outgoing: repo.listOutgoingFriendRequests(req.user.id),
     error: null,
@@ -13,10 +17,10 @@ router.get("/", (req, res) => {
 });
 
 router.post("/request", (req, res) => {
-  const { error } = repo.sendFriendRequest(req.user.id, req.body.username);
+  const { error } = repo.sendFriendRequestByCode(req.user.id, req.body.code);
   if (error) {
     return res.status(400).render("friends", {
-      friends: repo.listFriends(req.user.id),
+      friends: friendsWithUnread(req.user.id),
       incoming: repo.listIncomingFriendRequests(req.user.id),
       outgoing: repo.listOutgoingFriendRequests(req.user.id),
       error,

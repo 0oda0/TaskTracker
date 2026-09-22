@@ -48,7 +48,7 @@ function checkWeeklyDebts(now = new Date()) {
     repo.createNotification(
       task.assignee_id,
       `За неделю не хватило ${shortfall} (задача «${task.title}»). Создана задача-долг.`,
-      debtTaskId
+      { taskId: debtTaskId }
     );
     created.push(debtTaskId);
   }

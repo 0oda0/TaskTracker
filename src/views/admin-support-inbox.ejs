@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+<h1>Поддержка — входящие</h1>
+<p><a href="/admin">← Админка</a></p>
+<% if (!threads.length) { %><p class="muted">Обращений пока нет.</p><% } %>
+<ul class="task-list">
+  <% threads.forEach(t => { %>
+    <li class="task-row">
+      <a href="/admin/support/<%= t.user_id %>"><%= t.display_name %></a>
+      <span class="muted small">@<%= t.username %></span>
+      <span class="muted"><%= (t.last_body || '').slice(0, 60) %></span>
+      <% if (t.unread) { %><span class="badge"><%= t.unread %></span><% } %>
+    </li>
+  <% }) %>
+</ul>
+<%- include('partials/footer') %>

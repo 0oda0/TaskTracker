@@ -1,3 +1,40 @@
 </main>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+
+  (function () {
+    var btn = document.getElementById("install-btn");
+    if (!btn) return;
+    var deferredPrompt = null;
+    var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    if (standalone) return;
+
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.classList.remove("hidden");
+    });
+    window.addEventListener("appinstalled", function () {
+      btn.classList.add("hidden");
+      deferredPrompt = null;
+    });
+
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS) btn.classList.remove("hidden");
+
+    btn.addEventListener("click", function () {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function () { deferredPrompt = null; });
+      } else if (isIOS) {
+        alert("Чтобы установить: нажмите кнопку «Поделиться» внизу браузера → «На экран «Домой»».");
+      } else {
+        alert("Откройте меню браузера и выберите «Установить приложение».");
+      }
+    });
+  })();
+</script>
 </body>
 </html>

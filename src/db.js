@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
+  friend_code TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin')),
+  avatar_color TEXT NOT NULL DEFAULT 'violet',
+  theme TEXT NOT NULL DEFAULT 'dark' CHECK(theme IN ('dark','light')),
+  session_version INTEGER NOT NULL DEFAULT 0,
+  last_seen_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -108,9 +114,36 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id INTEGER NOT NULL REFERENCES users(id),
   message TEXT NOT NULL,
   task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+  link TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   read_at TEXT
 );
+
+-- Direct messages between friends. Both users must be friends to write here
+-- (enforced in repo.js, not by a constraint - friendships can end later
+-- without invalidating history).
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user_id INTEGER NOT NULL REFERENCES users(id),
+  to_user_id INTEGER NOT NULL REFERENCES users(id),
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  read_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(from_user_id, to_user_id, created_at);
+
+-- One row per message in a user's support thread with the admins (fromAdmin
+-- distinguishes direction; no separate "thread" entity, grouped by user_id).
+CREATE TABLE IF NOT EXISTS support_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  from_admin INTEGER NOT NULL DEFAULT 0,
+  body TEXT NOT NULL,
+  read_by_admin INTEGER NOT NULL DEFAULT 0,
+  read_by_user INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_support_user ON support_messages(user_id, created_at);
 
 -- Small key/value store, currently just tracks which ISO week the weekly
 -- debt check last ran for (see src/debt.js), so restarts don't double-run it.
@@ -119,6 +152,44 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value TEXT NOT NULL
 );
 `);
+
+// --- migrations for columns added after the first deploy: CREATE TABLE IF
+// NOT EXISTS is a no-op on a table that already exists, so any new column
+// needs an explicit ALTER (guarded by checking it isn't already there, so
+// this stays safe to run on every boot, fresh DB or not).
+const userColumns = new Set(db.prepare("PRAGMA table_info(users)").all().map((c) => c.name));
+if (!userColumns.has("friend_code")) db.exec("ALTER TABLE users ADD COLUMN friend_code TEXT");
+if (!userColumns.has("role")) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+if (!userColumns.has("avatar_color")) db.exec("ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT 'violet'");
+if (!userColumns.has("theme")) db.exec("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark'");
+if (!userColumns.has("session_version")) db.exec("ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0");
+if (!userColumns.has("last_seen_at")) db.exec("ALTER TABLE users ADD COLUMN last_seen_at TEXT");
+
+const notifColumns = new Set(db.prepare("PRAGMA table_info(notifications)").all().map((c) => c.name));
+if (!notifColumns.has("link")) db.exec("ALTER TABLE notifications ADD COLUMN link TEXT");
+
+// Backfill friend codes for any pre-existing accounts (new registrations
+// already get one at INSERT time - see repo.createUser).
+const codeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+function randomFriendCode() {
+  let out = "";
+  for (let i = 0; i < 8; i++) out += codeAlphabet[Math.floor(Math.random() * codeAlphabet.length)];
+  return out;
+}
+const needCodes = db.prepare("SELECT id FROM users WHERE friend_code IS NULL").all();
+for (const { id } of needCodes) {
+  let code;
+  do { code = randomFriendCode(); } while (db.prepare("SELECT 1 FROM users WHERE friend_code = ?").get(code));
+  db.prepare("UPDATE users SET friend_code = ? WHERE id = ?").run(code, id);
+}
+
+// If this instance predates roles, promote whoever registered first -
+// there's otherwise no way to reach /admin at all on an upgraded install.
+const hasAdmin = db.prepare("SELECT 1 FROM users WHERE role = 'admin'").get();
+if (!hasAdmin) {
+  const first = db.prepare("SELECT id FROM users ORDER BY created_at ASC, id ASC LIMIT 1").get();
+  if (first) db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(first.id);
+}
 
 const DEFAULT_SPHERES = ["Работа/учёба", "Физ. нагрузка", "Рутина", "Личное"];
 const insertSphere = db.prepare("INSERT OR IGNORE INTO spheres (name) VALUES (?)");

@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+<h1>Пользователи</h1>
+<p><a href="/admin">← Админка</a></p>
+<ul class="task-list">
+  <% users.forEach(u => { %>
+    <li class="task-row">
+      <span class="avatar avatar-<%= u.avatar_color %>"><%= u.display_name[0] %></span>
+      <a href="/admin/users/<%= u.id %>"><%= u.display_name %></a>
+      <span class="muted small">@<%= u.username %></span>
+      <% if (u.role === 'admin') { %><span class="tag tag-amber">admin</span><% } %>
+      <span class="muted small"><%= u.created_at.slice(0, 10) %></span>
+    </li>
+  <% }) %>
+</ul>
+<%- include('partials/footer') %>

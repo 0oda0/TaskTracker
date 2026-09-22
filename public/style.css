@@ -20,6 +20,21 @@
   font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+:root[data-theme="light"] {
+  --bg: #f3f4f8;
+  --bg-soft: #ffffff;
+  --card: #ffffff;
+  --surface: #eef0f6;
+  --text: #191a2b;
+  --muted: #6b6f8a;
+  --border: #e1e3ee;
+  --danger-bg: #fdeceb;
+  --ok-bg: #e9faf3;
+  --warn-bg: #fff8e8;
+  --shadow: 0 1px 2px rgba(24, 24, 60, 0.04), 0 8px 24px -12px rgba(24, 24, 60, 0.12);
+}
+:root[data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.97); }
+
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); text-decoration: none; }
@@ -196,6 +211,55 @@ button.small, .button.small { padding: 0.32rem 0.75rem; font-size: 0.85em; }
 .detail-head { display: flex; align-items: center; gap: 0.5rem; }
 .detail-head h1 { margin: 1.25rem 0 0; }
 .meta-line { display: flex; align-items: center; gap: 0.6rem; margin: 0.2rem 0 0.8rem; }
+
+/* --- avatars --- */
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: 50%; font-weight: 800; font-size: 0.85rem; color: #fff; text-decoration: none; flex-shrink: 0;
+}
+.icon-btn.avatar { width: 38px; height: 38px; font-size: 1rem; }
+.avatar-violet { background: #6d5ef8; }
+.avatar-teal   { background: #14b8a6; }
+.avatar-amber  { background: #d97706; }
+.avatar-rose   { background: #db2777; }
+.avatar-sky    { background: #0284c7; }
+.avatar-lime   { background: #65a30d; }
+.avatar-picker { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.avatar-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+.avatar-option .avatar { width: 36px; height: 36px; cursor: pointer; border: 2px solid transparent; }
+.avatar-option input:checked + .avatar { border-color: var(--text); }
+
+/* --- chat --- */
+.chat-log { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; max-width: 560px; }
+.chat-bubble {
+  background: var(--surface); border-radius: 14px 14px 14px 4px; padding: 0.55rem 0.85rem;
+  max-width: 75%; align-self: flex-start; word-break: break-word;
+}
+.chat-bubble.mine { background: var(--accent-strong); color: #fff; align-self: flex-end; border-radius: 14px 14px 4px 14px; }
+.chat-time { display: block; margin-top: 0.15rem; font-size: 0.72em; }
+.chat-form { max-width: 560px; }
+.chat-form input { flex: 1; }
+
+/* --- profile tabs (radio-only, no JS) --- */
+.tab-radio { position: absolute; opacity: 0; width: 0; height: 0; }
+.tab-labels { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tab-labels label { padding: 0.5rem 1rem; border-radius: 999px; background: var(--card); border: 1px solid var(--border); cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.tab-panel { display: none; }
+#tab-profile:checked ~ .tab-labels label[for="tab-profile"],
+#tab-settings:checked ~ .tab-labels label[for="tab-settings"],
+#tab-theme:checked ~ .tab-labels label[for="tab-theme"] { background: var(--accent-grad); color: #fff; border-color: transparent; }
+#tab-profile:checked ~ .tab-panel-profile,
+#tab-settings:checked ~ .tab-panel-settings,
+#tab-theme:checked ~ .tab-panel-theme { display: block; }
+
+/* --- admin registrations chart --- */
+.reg-chart { display: flex; align-items: flex-end; gap: 0.35rem; height: 100px; margin: 1rem 0; }
+.reg-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.25rem; }
+.reg-bar { width: 100%; background: var(--accent-grad); border-radius: 4px 4px 0 0; min-height: 2px; }
+.reg-day { font-size: 0.65rem; white-space: nowrap; }
+
+.my-code { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.2rem; margin: 1rem 0; }
+.my-code code { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.1em; }
 
 @media (max-width: 640px) {
   .container { padding-bottom: 5.5rem; }

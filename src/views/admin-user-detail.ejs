@@ -1,0 +1,24 @@
+<%- include('partials/header') %>
+<h1><%= user.display_name %></h1>
+<p><a href="/admin/users">← Пользователи</a></p>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+
+<div class="card" style="padding: 1.2rem 1.3rem">
+  <p>Логин: <strong>@<%= user.username %></strong></p>
+  <p>Роль: <strong><%= user.role %></strong></p>
+  <p>Задач (создал/назначен): <strong><%= taskCount %></strong> · Друзей: <strong><%= friendCount %></strong></p>
+  <p>Регистрация: <%= user.created_at %> · Последняя активность: <%= user.last_seen_at || '—' %></p>
+
+  <form method="post" action="/admin/users/<%= user.id %>/role" class="inline-form">
+    <select name="role">
+      <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>user</option>
+      <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>admin</option>
+    </select>
+    <button type="submit">Изменить роль</button>
+  </form>
+</div>
+
+<form method="post" action="/admin/users/<%= user.id %>/delete" onsubmit="return confirm('Удалить пользователя без возврата? Все его задачи, дружбы и сообщения тоже удалятся.')">
+  <button type="submit" class="danger">Удалить пользователя</button>
+</form>
+<%- include('partials/footer') %>

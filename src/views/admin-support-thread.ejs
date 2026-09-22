@@ -1,0 +1,18 @@
+<%- include('partials/header') %>
+<h1><%= user.display_name %></h1>
+<p><a href="/admin/support">← Все обращения</a></p>
+
+<div class="chat-log">
+  <% messages.forEach(m => { %>
+    <div class="chat-bubble <%= m.from_admin ? 'mine' : '' %>">
+      <%= m.body %>
+      <span class="chat-time muted small"><%= m.created_at.slice(0, 16) %></span>
+    </div>
+  <% }) %>
+</div>
+
+<form method="post" action="/admin/support/<%= user.id %>/reply" class="inline-form chat-form">
+  <input type="text" name="body" placeholder="Ответ…" required autocomplete="off">
+  <button type="submit">Отправить</button>
+</form>
+<%- include('partials/footer') %>

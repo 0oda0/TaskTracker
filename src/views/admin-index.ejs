@@ -1,0 +1,26 @@
+<%- include('partials/header') %>
+<h1>Админка</h1>
+<nav class="inline-form">
+  <a href="/admin/users" class="button small">Пользователи</a>
+  <a href="/admin/support" class="button small">Поддержка<% if (stats.unreadSupport) { %><span class="badge"><%= stats.unreadSupport %></span><% } %></a>
+</nav>
+
+<div class="tile-grid">
+  <div class="tile"><div class="tile-title">Всего пользователей</div><div class="progress-caption"><strong style="font-size:1.5em"><%= stats.total %></strong></div></div>
+  <div class="tile"><div class="tile-title">DAU</div><div class="progress-caption"><strong style="font-size:1.5em"><%= stats.dau %></strong></div></div>
+  <div class="tile"><div class="tile-title">WAU</div><div class="progress-caption"><strong style="font-size:1.5em"><%= stats.wau %></strong></div></div>
+  <div class="tile"><div class="tile-title">MAU</div><div class="progress-caption"><strong style="font-size:1.5em"><%= stats.mau %></strong></div></div>
+</div>
+
+<h2>Регистрации, последние 14 дней</h2>
+<% const max = Math.max(1, ...stats.registrations.map(r => r.n)); %>
+<div class="reg-chart">
+  <% stats.registrations.forEach(r => { %>
+    <div class="reg-bar-wrap" title="<%= r.day %>: <%= r.n %>">
+      <div class="reg-bar" style="height: <%= Math.round((r.n / max) * 100) %>%"></div>
+      <span class="reg-day muted small"><%= r.day.slice(5) %></span>
+    </div>
+  <% }) %>
+  <% if (!stats.registrations.length) { %><p class="muted">Пока пусто.</p><% } %>
+</div>
+<%- include('partials/footer') %>

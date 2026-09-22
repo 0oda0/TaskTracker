@@ -1,12 +1,52 @@
 const db = require("./db");
 const { periodKey, previousPeriod } = require("./period");
 
+const PUBLIC_USER_FIELDS = "id, username, display_name, friend_code, role, avatar_color, theme, created_at, last_seen_at";
+
 function listUsers() {
-  return db.prepare("SELECT id, username, display_name FROM users ORDER BY display_name").all();
+  return db.prepare(`SELECT ${PUBLIC_USER_FIELDS} FROM users ORDER BY display_name`).all();
 }
 
 function getUserById(id) {
-  return db.prepare("SELECT id, username, display_name FROM users WHERE id = ?").get(id);
+  return db.prepare(`SELECT ${PUBLIC_USER_FIELDS} FROM users WHERE id = ?`).get(id);
+}
+
+function randomCode(len = 8) {
+  const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // no 0/O/1/I
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return out;
+}
+
+function generateUniqueFriendCode() {
+  let code;
+  do {
+    code = randomCode();
+  } while (db.prepare("SELECT 1 FROM users WHERE friend_code = ?").get(code));
+  return code;
+}
+
+// The very first account on a fresh instance is auto-promoted to admin -
+// there is no separate bootstrap step for a self-hosted app like this.
+function createUser({ username, passwordHash, displayName }) {
+  const isFirstUser = db.prepare("SELECT COUNT(*) AS n FROM users").get().n === 0;
+  const id = db.prepare(`
+    INSERT INTO users (username, password_hash, display_name, friend_code, role)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(username, passwordHash, displayName, generateUniqueFriendCode(), isFirstUser ? "admin" : "user").lastInsertRowid;
+  return getUserById(id);
+}
+
+function getUserAuthRow(username) {
+  return db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+}
+
+function touchLastSeen(userId) {
+  // Throttled to one write per ~5 minutes per user so this doesn't turn
+  // every request into a write.
+  const row = db.prepare("SELECT last_seen_at FROM users WHERE id = ?").get(userId);
+  if (row && row.last_seen_at && Date.now() - Date.parse(row.last_seen_at.replace(" ", "T") + "Z") < 5 * 60 * 1000) return;
+  db.prepare("UPDATE users SET last_seen_at = datetime('now') WHERE id = ?").run(userId);
 }
 
 function listSpheres() {
@@ -29,10 +69,10 @@ function getFriendship(userId, otherId) {
   `).get(userId, otherId, otherId, userId);
 }
 
-function sendFriendRequest(fromUserId, username) {
-  const target = findUserByUsername((username || "").trim());
-  if (!target) return { error: "Пользователь не найден" };
-  if (target.id === fromUserId) return { error: "Нельзя добавить самого себя" };
+function sendFriendRequestByCode(fromUserId, code) {
+  const target = db.prepare(`SELECT ${PUBLIC_USER_FIELDS} FROM users WHERE friend_code = ?`).get((code || "").trim().toUpperCase());
+  if (!target) return { error: "Код не найден" };
+  if (target.id === fromUserId) return { error: "Это ваш собственный код" };
 
   const existing = getFriendship(fromUserId, target.id);
   if (existing) {
@@ -86,7 +126,7 @@ function cancelFriendRequest(id, userId) {
 
 function listFriends(userId) {
   return db.prepare(`
-    SELECT u.id, u.username, u.display_name, fs.tag AS tag, COALESCE(fs.can_assign, 0) AS can_assign
+    SELECT u.id, u.username, u.display_name, u.avatar_color, u.theme, fs.tag AS tag, COALESCE(fs.can_assign, 0) AS can_assign
     FROM friendships f
     JOIN users u ON u.id = (CASE WHEN f.requester_id = ? THEN f.addressee_id ELSE f.requester_id END)
     LEFT JOIN friend_settings fs ON fs.user_id = ? AND fs.friend_id = u.id
@@ -403,8 +443,8 @@ function progressBySphere(userId, now = new Date()) {
 
 // --- notifications ---
 
-function createNotification(userId, message, taskId = null) {
-  db.prepare("INSERT INTO notifications (user_id, message, task_id) VALUES (?, ?, ?)").run(userId, message, taskId);
+function createNotification(userId, message, { taskId = null, link = null } = {}) {
+  db.prepare("INSERT INTO notifications (user_id, message, task_id, link) VALUES (?, ?, ?, ?)").run(userId, message, taskId, link);
 }
 
 function unreadNotificationCount(userId) {
@@ -420,6 +460,180 @@ function markAllNotificationsRead(userId) {
   db.prepare("UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL").run(userId);
 }
 
+// --- direct messages (friends only) ---
+
+function sendMessage(fromUserId, toUserId, body) {
+  if (!areFriends(fromUserId, toUserId)) return { error: "Можно писать только друзьям" };
+  const text = (body || "").trim();
+  if (!text) return { error: "Пустое сообщение" };
+  db.prepare("INSERT INTO messages (from_user_id, to_user_id, body) VALUES (?, ?, ?)").run(fromUserId, toUserId, text);
+  return {};
+}
+
+function listConversation(userId, friendId, limit = 200) {
+  return db.prepare(`
+    SELECT * FROM messages
+    WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)
+    ORDER BY created_at ASC LIMIT ?
+  `).all(userId, friendId, friendId, userId, limit);
+}
+
+function markConversationRead(userId, friendId) {
+  db.prepare("UPDATE messages SET read_at = datetime('now') WHERE to_user_id = ? AND from_user_id = ? AND read_at IS NULL")
+    .run(userId, friendId);
+}
+
+function unreadMessageCount(userId, friendId = null) {
+  if (friendId) {
+    const row = db.prepare("SELECT COUNT(*) AS n FROM messages WHERE to_user_id = ? AND from_user_id = ? AND read_at IS NULL").get(userId, friendId);
+    return row.n;
+  }
+  const row = db.prepare("SELECT COUNT(*) AS n FROM messages WHERE to_user_id = ? AND read_at IS NULL").get(userId);
+  return row.n;
+}
+
+// --- support chat (any user <-> admins) ---
+
+function sendSupportMessage(userId, body) {
+  const text = (body || "").trim();
+  if (!text) return;
+  db.prepare("INSERT INTO support_messages (user_id, from_admin, body, read_by_user) VALUES (?, 0, ?, 1)").run(userId, text);
+}
+
+function sendAdminReply(userId, body) {
+  const text = (body || "").trim();
+  if (!text) return;
+  db.prepare("INSERT INTO support_messages (user_id, from_admin, body, read_by_admin) VALUES (?, 1, ?, 1)").run(userId, text);
+  db.prepare("UPDATE support_messages SET read_by_user = 0 WHERE user_id = ? AND from_admin = 0").run(userId);
+}
+
+function listSupportThread(userId) {
+  return db.prepare("SELECT * FROM support_messages WHERE user_id = ? ORDER BY created_at ASC").all(userId);
+}
+
+function markSupportReadByUser(userId) {
+  db.prepare("UPDATE support_messages SET read_by_user = 1 WHERE user_id = ? AND from_admin = 1 AND read_by_user = 0").run(userId);
+}
+
+function markSupportReadByAdmin(userId) {
+  db.prepare("UPDATE support_messages SET read_by_admin = 1 WHERE user_id = ? AND from_admin = 0 AND read_by_admin = 0").run(userId);
+}
+
+function unreadSupportForUser(userId) {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM support_messages WHERE user_id = ? AND from_admin = 1 AND read_by_user = 0").get(userId);
+  return row.n;
+}
+
+// Admin inbox: everyone who has ever written, with their last message and unread count.
+function listSupportInbox() {
+  return db.prepare(`
+    SELECT u.id AS user_id, u.display_name, u.username,
+           (SELECT body FROM support_messages WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) AS last_body,
+           (SELECT created_at FROM support_messages WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) AS last_at,
+           (SELECT COUNT(*) FROM support_messages WHERE user_id = u.id AND from_admin = 0 AND read_by_admin = 0) AS unread
+    FROM users u
+    WHERE EXISTS (SELECT 1 FROM support_messages sm WHERE sm.user_id = u.id)
+    ORDER BY last_at DESC
+  `).all();
+}
+
+function unreadSupportTotalForAdmin() {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM support_messages WHERE from_admin = 0 AND read_by_admin = 0").get();
+  return row.n;
+}
+
+// --- admin ---
+
+function isAdmin(userId) {
+  const row = db.prepare("SELECT role FROM users WHERE id = ?").get(userId);
+  return !!row && row.role === "admin";
+}
+
+function adminCount() {
+  return db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
+}
+
+function setUserRole(targetId, role, actingAdminId) {
+  if (role === "user" && targetId === actingAdminId && adminCount() <= 1) {
+    return { error: "Нельзя снять роль с последнего администратора" };
+  }
+  db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, targetId);
+  return {};
+}
+
+function adminUserDetail(userId) {
+  const user = getUserById(userId);
+  if (!user) return null;
+  const taskCount = db.prepare("SELECT COUNT(*) AS n FROM tasks WHERE created_by = ? OR assignee_id = ?").get(userId, userId).n;
+  const friendCount = listFriends(userId).length;
+  return { user, taskCount, friendCount };
+}
+
+function adminStats() {
+  const total = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
+  const since = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().slice(0, 10);
+  };
+  const activeSince = (dateStr) => db.prepare("SELECT COUNT(*) AS n FROM users WHERE last_seen_at >= ?").get(dateStr).n;
+  const registrations = db.prepare(`
+    SELECT substr(created_at, 1, 10) AS day, COUNT(*) AS n FROM users
+    WHERE created_at >= ? GROUP BY day ORDER BY day
+  `).all(since(13) + " 00:00:00");
+  return {
+    total,
+    dau: activeSince(since(0)),
+    wau: activeSince(since(6)),
+    mau: activeSince(since(29)),
+    unreadSupport: unreadSupportTotalForAdmin(),
+    registrations,
+  };
+}
+
+// Full hard delete - no payments/content to preserve, unlike a bigger app
+// that would anonymize instead. Cascades everything owned by the user that
+// the schema doesn't already cascade via ON DELETE.
+function eraseUser(userId) {
+  db.prepare("DELETE FROM tasks WHERE created_by = ? OR assignee_id = ?").run(userId, userId);
+  db.prepare("DELETE FROM task_transfers WHERE from_user_id = ? OR to_user_id = ?").run(userId, userId);
+  db.prepare("DELETE FROM friendships WHERE requester_id = ? OR addressee_id = ?").run(userId, userId);
+  db.prepare("DELETE FROM friend_settings WHERE user_id = ? OR friend_id = ?").run(userId, userId);
+  db.prepare("DELETE FROM shopping_lists WHERE owner_id = ? OR created_by = ?").run(userId, userId);
+  db.prepare("DELETE FROM messages WHERE from_user_id = ? OR to_user_id = ?").run(userId, userId);
+  db.prepare("DELETE FROM support_messages WHERE user_id = ?").run(userId);
+  db.prepare("DELETE FROM notifications WHERE user_id = ?").run(userId);
+  db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+}
+
+// --- profile / account ---
+
+function updateProfile(userId, { displayName, avatarColor }) {
+  db.prepare("UPDATE users SET display_name = ?, avatar_color = ? WHERE id = ?").run(displayName, avatarColor, userId);
+}
+
+function setTheme(userId, theme) {
+  db.prepare("UPDATE users SET theme = ? WHERE id = ?").run(theme === "light" ? "light" : "dark", userId);
+}
+
+function regenerateFriendCode(userId) {
+  const code = generateUniqueFriendCode();
+  db.prepare("UPDATE users SET friend_code = ? WHERE id = ?").run(code, userId);
+  return code;
+}
+
+// Returns the new session_version on success (bump invalidates other
+// devices' cookies - see auth-mw.js), or an error string.
+function changePassword(userId, currentPassword, newPassword, bcrypt) {
+  const row = db.prepare("SELECT password_hash, session_version FROM users WHERE id = ?").get(userId);
+  if (!row || !bcrypt.compareSync(currentPassword, row.password_hash)) return { error: "Неверный текущий пароль" };
+  if (!newPassword || newPassword.length < 6) return { error: "Новый пароль от 6 символов" };
+  const hash = bcrypt.hashSync(newPassword, 10);
+  const sessionVersion = row.session_version + 1;
+  db.prepare("UPDATE users SET password_hash = ?, session_version = ? WHERE id = ?").run(hash, sessionVersion, userId);
+  return { sessionVersion };
+}
+
 // --- settings (key/value) ---
 
 function getSetting(key) {
@@ -432,9 +646,9 @@ function setSetting(key, value) {
 }
 
 module.exports = {
-  listUsers, getUserById,
+  listUsers, getUserById, createUser, getUserAuthRow, touchLastSeen,
   listSpheres, getSphere,
-  findUserByUsername, sendFriendRequest, getFriendRequest, listIncomingFriendRequests, listOutgoingFriendRequests,
+  findUserByUsername, sendFriendRequestByCode, getFriendRequest, listIncomingFriendRequests, listOutgoingFriendRequests,
   respondFriendRequest, cancelFriendRequest, listFriends, areFriends, visibleUserIds, removeFriend,
   upsertFriendSettings, canAssignTo, listAssignableUsers,
   getTask, listTasks, createTask, updateTask, deleteTask,
@@ -443,5 +657,10 @@ module.exports = {
   listShoppingLists, getShoppingList, createShoppingList, canAccessShoppingList, listShoppingItems, getShoppingItem, addShoppingItem, toggleShoppingItem, deleteShoppingItem,
   progressBySphere,
   createNotification, unreadNotificationCount, listNotifications, markAllNotificationsRead,
+  sendMessage, listConversation, markConversationRead, unreadMessageCount,
+  sendSupportMessage, sendAdminReply, listSupportThread, markSupportReadByUser, markSupportReadByAdmin,
+  unreadSupportForUser, listSupportInbox, unreadSupportTotalForAdmin,
+  isAdmin, adminCount, setUserRole, adminUserDetail, adminStats, eraseUser,
+  updateProfile, setTheme, regenerateFriendCode, changePassword,
   getSetting, setSetting,
 };

@@ -2,8 +2,14 @@
 <h1>Друзья</h1>
 <% if (error) { %><p class="error"><%= error %></p><% } %>
 
+<div class="card my-code">
+  <span class="muted">Ваш код</span>
+  <code id="my-friend-code"><%= currentUser.friend_code %></code>
+  <button type="button" class="small ghost-btn" onclick="navigator.clipboard.writeText('<%= currentUser.friend_code %>')">Скопировать</button>
+</div>
+
 <form method="post" action="/friends/request" class="inline-form">
-  <input type="text" name="username" placeholder="Логин друга" required>
+  <input type="text" name="code" placeholder="Код друга" required maxlength="8" style="text-transform: uppercase">
   <button type="submit">Отправить запрос</button>
 </form>
 
@@ -12,7 +18,7 @@
   <ul class="task-list">
     <% incoming.forEach(f => { %>
       <li class="task-row">
-        <span><strong><%= f.from_name %></strong> (<%= f.from_username %>) хочет добавить вас в друзья</span>
+        <span><strong><%= f.from_name %></strong> хочет добавить вас в друзья</span>
         <form method="post" action="/friends/<%= f.id %>/accept" class="inline-form"><button type="submit">Принять</button></form>
         <form method="post" action="/friends/<%= f.id %>/decline" class="inline-form"><button type="submit" class="danger">Отклонить</button></form>
       </li>
@@ -25,7 +31,7 @@
   <ul class="task-list">
     <% outgoing.forEach(f => { %>
       <li class="task-row">
-        <span>Запрос отправлен <strong><%= f.to_name %></strong> (<%= f.to_username %>) — ожидает ответа</span>
+        <span>Запрос отправлен <strong><%= f.to_name %></strong> — ожидает ответа</span>
         <form method="post" action="/friends/<%= f.id %>/cancel" class="inline-form"><button type="submit" class="danger">Отменить</button></form>
       </li>
     <% }) %>
@@ -33,14 +39,15 @@
 <% } %>
 
 <h2>Мои друзья</h2>
-<% if (!friends.length) { %><p class="muted">Пока никого — отправьте запрос по логину выше.</p><% } %>
+<% if (!friends.length) { %><p class="muted">Пока никого — отправьте свой код другу или введите его код выше.</p><% } %>
 <ul class="task-list friend-list">
   <% friends.forEach(f => { %>
     <li class="task-row friend-row">
       <div class="friend-name">
+        <span class="avatar avatar-<%= f.avatar_color %>"><%= f.display_name[0] %></span>
         <strong><%= f.display_name %></strong>
-        <span class="muted small">@<%= f.username %></span>
         <% if (f.tag) { %><span class="tag tag-violet"><%= f.tag %></span><% } %>
+        <a href="/chat/<%= f.id %>" class="button small">💬 Написать<% if (f.unread) { %><span class="badge"><%= f.unread %></span><% } %></a>
       </div>
       <form method="post" action="/friends/<%= f.id %>/settings" class="friend-settings-form">
         <input type="text" name="tag" placeholder="Тег: жена, друг…" value="<%= f.tag || '' %>" maxlength="30">

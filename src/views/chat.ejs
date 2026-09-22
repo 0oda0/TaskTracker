@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<h1><%= friend.display_name %></h1>
+<p><a href="/friends">← К друзьям</a></p>
+
+<div class="chat-log">
+  <% if (!messages.length) { %><p class="muted">Сообщений пока нет.</p><% } %>
+  <% messages.forEach(m => { %>
+    <div class="chat-bubble <%= m.from_user_id === currentUser.id ? 'mine' : '' %>">
+      <%= m.body %>
+      <span class="chat-time muted small"><%= m.created_at.slice(11, 16) %></span>
+    </div>
+  <% }) %>
+</div>
+
+<form method="post" action="/chat/<%= friend.id %>/send" class="inline-form chat-form">
+  <input type="text" name="body" placeholder="Сообщение…" required autocomplete="off" autofocus>
+  <button type="submit">Отправить</button>
+</form>
+<%- include('partials/footer') %>

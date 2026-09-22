@@ -1,0 +1,62 @@
+<%- include('partials/header') %>
+<h1>Профиль</h1>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<% if (success) { %><p class="badge-ok"><%= success %></p><% } %>
+
+<div class="tabs">
+  <input type="radio" name="profile-tab" id="tab-profile" class="tab-radio" checked>
+  <input type="radio" name="profile-tab" id="tab-settings" class="tab-radio">
+  <input type="radio" name="profile-tab" id="tab-theme" class="tab-radio">
+  <div class="tab-labels">
+    <label for="tab-profile">Профиль</label>
+    <label for="tab-settings">Настройки</label>
+    <label for="tab-theme">Тема</label>
+  </div>
+
+  <section class="tab-panel tab-panel-profile">
+    <form method="post" action="/profile" class="task-form">
+      <label>Имя<input type="text" name="display_name" value="<%= currentUser.display_name %>" required></label>
+      <label>Цвет аватара
+        <div class="avatar-picker">
+          <% avatarColors.forEach(c => { %>
+            <label class="avatar-option">
+              <input type="radio" name="avatar_color" value="<%= c %>" <%= currentUser.avatar_color === c ? 'checked' : '' %>>
+              <span class="avatar avatar-<%= c %>"><%= currentUser.display_name[0] %></span>
+            </label>
+          <% }) %>
+        </div>
+      </label>
+      <button type="submit">Сохранить</button>
+    </form>
+  </section>
+
+  <section class="tab-panel tab-panel-settings">
+    <h2>Пароль</h2>
+    <form method="post" action="/profile/password" class="task-form">
+      <label>Текущий пароль<input type="password" name="current_password" required></label>
+      <label>Новый пароль<input type="password" name="new_password" required minlength="6"></label>
+      <button type="submit">Сменить пароль</button>
+    </form>
+
+    <h2>Код друга</h2>
+    <p>Ваш код: <code><%= currentUser.friend_code %></code></p>
+    <form method="post" action="/profile/friend-code/regenerate" onsubmit="return confirm('Старый код перестанет работать. Продолжить?')">
+      <button type="submit" class="ghost-btn">Сгенерировать новый код</button>
+    </form>
+
+    <h2>Удаление аккаунта</h2>
+    <p class="muted">Удалит все ваши задачи, дружбы, сообщения и списки покупок без возможности восстановления.</p>
+    <form method="post" action="/profile/delete" class="task-form" onsubmit="return confirm('Точно удалить аккаунт навсегда?')">
+      <label>Пароль для подтверждения<input type="password" name="password" required></label>
+      <button type="submit" class="danger">Удалить аккаунт</button>
+    </form>
+  </section>
+
+  <section class="tab-panel tab-panel-theme">
+    <form method="post" action="/profile/theme" class="inline-form">
+      <button type="submit" name="theme" value="dark" class="<%= currentUser.theme === 'dark' ? '' : 'ghost-btn' %>">🌙 Тёмная</button>
+      <button type="submit" name="theme" value="light" class="<%= currentUser.theme === 'light' ? '' : 'ghost-btn' %>">☀️ Светлая</button>
+    </form>
+  </section>
+</div>
+<%- include('partials/footer') %>
