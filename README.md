@@ -1,6 +1,7 @@
 # TaskTracker
 
 [![Test](https://github.com/0oda0/TaskTracker/actions/workflows/test.yml/badge.svg)](https://github.com/0oda0/TaskTracker/actions/workflows/test.yml)
+[![Docker](https://github.com/0oda0/TaskTracker/actions/workflows/docker.yml/badge.svg)](https://github.com/0oda0/TaskTracker/actions/workflows/docker.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.5-339933?logo=node.js&logoColor=white)
 
