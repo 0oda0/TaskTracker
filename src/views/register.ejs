@@ -11,6 +11,17 @@
 </head>
 <body>
 <main class="auth-page">
+  <% if (currentUser) { %>
+    <div class="auth-form">
+      <h1>TaskTracker</h1>
+      <p>Вы уже вошли как <strong><%= currentUser.display_name %></strong> (@<%= currentUser.username %>).</p>
+      <p class="muted">Чтобы создать ещё один аккаунт на этом устройстве, сначала выйдите — иначе новый аккаунт легко перепутать с этим.</p>
+      <a href="/" class="button">На дашборд</a>
+      <form method="post" action="/logout">
+        <button type="submit" class="ghost-btn" style="width: 100%">Выйти и зарегистрировать другой аккаунт</button>
+      </form>
+    </div>
+  <% } else { %>
   <form class="auth-form" method="post" action="/register">
     <h1>TaskTracker</h1>
     <% if (error) { %><p class="error"><%= error %></p><% } %>
@@ -20,6 +31,7 @@
     <button type="submit">Создать аккаунт</button>
     <p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
   </form>
+  <% } %>
 </main>
 </body>
 </html>
