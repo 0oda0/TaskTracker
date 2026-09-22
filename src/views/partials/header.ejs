@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TaskTracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -11,20 +14,20 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/"><span class="brand-mark">✓</span>TaskTracker</a>
-    <label class="nav-toggle" for="nav-toggle-cb">☰</label>
-    <input type="checkbox" id="nav-toggle-cb" class="nav-toggle-cb">
-    <nav>
-      <a href="/" class="<%= path === '/' ? 'active' : '' %>">Дашборд</a>
-      <a href="/tasks" class="<%= path.startsWith('/tasks') ? 'active' : '' %>">Задачи</a>
-      <a href="/shopping" class="<%= path.startsWith('/shopping') ? 'active' : '' %>">Покупки</a>
-      <a href="/progress" class="<%= path.startsWith('/progress') ? 'active' : '' %>">Прогресс</a>
-      <a href="/transfers" class="<%= path.startsWith('/transfers') ? 'active' : '' %>">Передачи<% if (pendingTransferCount > 0) { %><span class="badge"><%= pendingTransferCount %></span><% } %></a>
-      <a href="/notifications" class="<%= path.startsWith('/notifications') ? 'active' : '' %>">🔔<% if (unreadNotifications > 0) { %><span class="badge"><%= unreadNotifications %></span><% } %></a>
+    <nav class="app-nav">
+      <a href="/" class="<%= path === '/' ? 'active' : '' %>"><span class="nav-icon">🏠</span><span class="nav-label">Дашборд</span></a>
+      <a href="/tasks" class="<%= path.startsWith('/tasks') ? 'active' : '' %>"><span class="nav-icon">✅</span><span class="nav-label">Задачи</span></a>
+      <a href="/shopping" class="<%= path.startsWith('/shopping') ? 'active' : '' %>"><span class="nav-icon">🛒</span><span class="nav-label">Покупки</span></a>
+      <a href="/progress" class="<%= path.startsWith('/progress') ? 'active' : '' %>"><span class="nav-icon">📊</span><span class="nav-label">Прогресс</span></a>
+      <a href="/transfers" class="<%= path.startsWith('/transfers') ? 'active' : '' %>"><span class="nav-icon">🔁</span><span class="nav-label">Передачи</span><% if (pendingTransferCount > 0) { %><span class="badge"><%= pendingTransferCount %></span><% } %></a>
     </nav>
-    <form action="/logout" method="post" class="logout-form">
-      <span class="who"><%= currentUser.display_name %></span>
-      <button type="submit" class="ghost-btn">Выйти</button>
-    </form>
+    <div class="topbar-actions">
+      <a href="/notifications" class="icon-btn <%= path.startsWith('/notifications') ? 'active' : '' %>">🔔<% if (unreadNotifications > 0) { %><span class="badge"><%= unreadNotifications %></span><% } %></a>
+      <form action="/logout" method="post" class="logout-form">
+        <span class="who"><%= currentUser.display_name %></span>
+        <button type="submit" class="ghost-btn">Выйти</button>
+      </form>
+    </div>
   </div>
 </header>
 <% } %>
