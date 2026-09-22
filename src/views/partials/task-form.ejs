@@ -1,0 +1,62 @@
+<form method="post" action="<%= action %>" class="task-form card">
+  <label>Название<input type="text" name="title" required autofocus value="<%= task ? task.title : '' %>"></label>
+  <label>Описание<textarea name="description" rows="3"><%= task ? (task.description || '') : '' %></textarea></label>
+
+  <div class="field-row">
+    <label>Сфера
+      <select name="sphere_id" required>
+        <% spheres.forEach(s => { %><option value="<%= s.id %>" <%= task && task.sphere_id === s.id ? 'selected' : '' %>><%= s.name %></option><% }) %>
+      </select>
+    </label>
+
+    <% if (typeof users !== 'undefined') { %>
+      <label>Исполнитель
+        <select name="assignee_id">
+          <% users.forEach(u => { %><option value="<%= u.id %>"><%= u.display_name %></option><% }) %>
+        </select>
+      </label>
+    <% } %>
+  </div>
+
+  <div class="field-row">
+    <label>Периодичность
+      <select name="period_type" id="period_type" onchange="toggleFields()">
+        <option value="once" <%= task && task.period_type === 'once' ? 'selected' : '' %>>Разово</option>
+        <option value="daily" <%= task && task.period_type === 'daily' ? 'selected' : '' %>>Каждый день</option>
+        <option value="weekly" <%= task && task.period_type === 'weekly' ? 'selected' : '' %>>Каждую неделю</option>
+        <option value="monthly" <%= task && task.period_type === 'monthly' ? 'selected' : '' %>>Каждый месяц</option>
+      </select>
+    </label>
+
+    <label>Цель за период (необязательно)
+      <input type="number" name="target_count" min="1" placeholder="напр. 100" value="<%= task && task.target_count ? task.target_count : '' %>">
+    </label>
+  </div>
+
+  <label id="due_date_field">Дата<input type="date" name="due_date" value="<%= task && task.due_date ? task.due_date : '' %>"></label>
+
+  <label id="weekday_field" class="hidden">День недели (необязательно)
+    <select name="weekday">
+      <option value="">Любой день</option>
+      <% weekdays.forEach(w => { %><option value="<%= w.value %>" <%= task && task.weekday === w.value ? 'selected' : '' %>><%= w.label %></option><% }) %>
+    </select>
+  </label>
+
+  <label id="month_day_field" class="hidden">Число месяца (необязательно)
+    <input type="number" name="month_day" min="1" max="31" value="<%= task && task.month_day ? task.month_day : '' %>">
+  </label>
+
+  <p class="hint">Если задать «Цель за период» — прогресс будет считаться числом (например 75/100), а не просто «готово/не готово».</p>
+
+  <button type="submit"><%= submitLabel %></button>
+</form>
+
+<script>
+  function toggleFields() {
+    const type = document.getElementById('period_type').value;
+    document.getElementById('due_date_field').classList.toggle('hidden', type !== 'once');
+    document.getElementById('weekday_field').classList.toggle('hidden', type !== 'weekly');
+    document.getElementById('month_day_field').classList.toggle('hidden', type !== 'monthly');
+  }
+  toggleFields();
+</script>

@@ -1,0 +1,14 @@
+<%- include('partials/header') %>
+<h1>Уведомления</h1>
+<% if (!items.length) { %>
+  <p class="muted">Пока пусто.</p>
+<% } %>
+<ul class="task-list">
+  <% items.forEach(n => { %>
+    <li class="task-row <%= n.read_at ? '' : 'unread' %>">
+      <span><%= n.message %></span>
+      <% if (n.task_id) { %><a href="/tasks/<%= n.task_id %>" class="muted">открыть задачу →</a><% } %>
+    </li>
+  <% }) %>
+</ul>
+<%- include('partials/footer') %>

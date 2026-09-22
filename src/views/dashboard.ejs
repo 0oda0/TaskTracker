@@ -1,0 +1,44 @@
+<%- include('partials/header') %>
+<h1>Привет, <%= currentUser.display_name %>!</h1>
+
+<% if (incomingCount > 0) { %>
+  <p class="notice"><a href="/transfers">У вас <%= incomingCount %> запрос(а) на передачу задач →</a></p>
+<% } %>
+
+<% if (overdue.length) { %>
+  <h2>Просрочено</h2>
+  <ul class="task-list">
+    <% overdue.forEach(({ t, target, amount }) => { %>
+      <li class="task-row overdue">
+        <span class="tag tag-<%= helpers.sphereColor(t.sphere_id) %>"><%= t.sphere_name %></span>
+        <a href="/tasks/<%= t.id %>"><%= t.title %></a>
+        <% if (target > 1) { %><span class="frac"><%= amount %>/<%= target %></span><% } %>
+        <form method="post" action="/tasks/<%= t.id %>/complete"><button type="submit">Готово</button></form>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<h2>Сегодня</h2>
+<% if (!today.length) { %>
+  <p class="muted">На сегодня задач нет.</p>
+<% } else { %>
+  <ul class="task-list">
+    <% today.forEach(({ t, target, amount }) => { %>
+      <li class="task-row">
+        <span class="tag tag-<%= helpers.sphereColor(t.sphere_id) %>"><%= t.sphere_name %></span>
+        <a href="/tasks/<%= t.id %>"><%= t.title %></a>
+        <span class="period muted"><%= helpers.periodLabel(t) %></span>
+        <% if (target > 1) { %>
+          <span class="frac"><%= amount %>/<%= target %></span>
+          <a href="/tasks/<%= t.id %>" class="button small">Добавить</a>
+        <% } else { %>
+          <form method="post" action="/tasks/<%= t.id %>/complete"><button type="submit">Готово</button></form>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<p><a href="/tasks/new" class="button">+ Новая задача</a></p>
+<%- include('partials/footer') %>

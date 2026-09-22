@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+<h1>Передачи задач</h1>
+
+<h2>Входящие запросы</h2>
+<% if (!incoming.length) { %><p class="muted">Пусто.</p><% } %>
+<ul class="task-list">
+  <% incoming.forEach(tr => { %>
+    <li class="task-row">
+      <span>
+        <% if (tr.direction === 'offer') { %>
+          <strong><%= tr.from_name %></strong> предлагает вам задачу «<a href="/tasks/<%= tr.task_id %>"><%= tr.task_title %></a>»
+        <% } else { %>
+          <strong><%= tr.from_name %></strong> просит забрать у вас задачу «<a href="/tasks/<%= tr.task_id %>"><%= tr.task_title %></a>»
+        <% } %>
+      </span>
+      <form method="post" action="/transfers/<%= tr.id %>/accept" class="inline-form"><button type="submit">Согласиться</button></form>
+      <form method="post" action="/transfers/<%= tr.id %>/decline" class="inline-form"><button type="submit" class="danger">Отклонить</button></form>
+    </li>
+  <% }) %>
+</ul>
+
+<h2>Мои исходящие запросы</h2>
+<% if (!outgoing.length) { %><p class="muted">Пусто.</p><% } %>
+<ul class="task-list">
+  <% outgoing.forEach(tr => { %>
+    <li class="task-row">
+      <span>
+        <% if (tr.direction === 'offer') { %>
+          Вы предложили «<a href="/tasks/<%= tr.task_id %>"><%= tr.task_title %></a>» пользователю <strong><%= tr.to_name %></strong>
+        <% } else { %>
+          Вы запросили «<a href="/tasks/<%= tr.task_id %>"><%= tr.task_title %></a>» у <strong><%= tr.to_name %></strong>
+        <% } %>
+        — ожидает ответа
+      </span>
+      <form method="post" action="/transfers/<%= tr.id %>/cancel" class="inline-form"><button type="submit" class="danger">Отменить</button></form>
+    </li>
+  <% }) %>
+</ul>
+<%- include('partials/footer') %>

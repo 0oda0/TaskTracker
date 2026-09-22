@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Регистрация — TaskTracker</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="auth-page">
+  <form class="auth-form" method="post" action="/register">
+    <h1>TaskTracker</h1>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <label>Логин<input type="text" name="username" required minlength="3" autofocus></label>
+    <label>Имя<input type="text" name="display_name" placeholder="Как вас показывать другим"></label>
+    <label>Пароль<input type="password" name="password" required minlength="6"></label>
+    <button type="submit">Создать аккаунт</button>
+    <p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
+  </form>
+</main>
+</body>
+</html>

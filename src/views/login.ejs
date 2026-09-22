@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход — TaskTracker</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="auth-page">
+  <form class="auth-form" method="post" action="/login">
+    <h1>TaskTracker</h1>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <label>Логин<input type="text" name="username" required autofocus></label>
+    <label>Пароль<input type="password" name="password" required></label>
+    <button type="submit">Войти</button>
+    <p class="muted">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+  </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+<div class="detail-head">
+  <h1><%= task.title %></h1>
+  <% if (isCreator) { %><a href="/tasks/<%= task.id %>/edit" class="icon-link" title="Редактировать">✎</a><% } %>
+</div>
+<p class="meta-line">
+  <span class="tag tag-<%= helpers.sphereColor(task.sphere_id) %>"><%= task.sphere_name %></span>
+  <span class="muted"><%= helpers.periodLabel(task) %></span>
+  <% if (streak > 0) { %><span class="streak">🔥 <%= streak %></span><% } %>
+</p>
+<% if (task.description) { %><p><%= task.description %></p><% } %>
+<p>Исполнитель: <strong><%= task.assignee_name %></strong> · Автор: <%= task.creator_name %></p>
+
+<div class="progress-card">
+  <div class="progress-bar big"><div class="progress-fill <%= done ? 'filled' : '' %>" style="width: <%= helpers.pct(amount, target) %>%"></div></div>
+  <div class="progress-caption">
+    <strong><%= amount %>/<%= target %></strong>
+    <% if (done) { %><span class="badge-ok">выполнено за текущий период</span><% } %>
+    <% if (!done) { %><span class="muted">всего выполнений: <%= lifetime %></span><% } %>
+  </div>
+</div>
+
+<% if (isAssignee && !done) { %>
+  <form method="post" action="/tasks/<%= task.id %>/complete" class="inline-form">
+    <% if (target > 1) { %>
+      <input type="number" name="amount" min="1" value="<%= remaining %>" style="width: 6em">
+      <button type="submit">Добавить</button>
+    <% } else { %>
+      <button type="submit">Отметить выполненным</button>
+    <% } %>
+  </form>
+<% } %>
+
+<h2>История</h2>
+<div class="history-dots">
+  <% history.forEach(h => { %>
+    <span class="dot <%= h.done ? 'dot-done' : (h.amount > 0 ? 'dot-partial' : 'dot-empty') %>" title="<%= h.key %>: <%= h.amount %>/<%= target %>"></span>
+  <% }) %>
+</div>
+
+<hr>
+
+<% if (isAssignee) { %>
+  <h2>Передать задачу</h2>
+  <form method="post" action="/tasks/<%= task.id %>/transfer/offer" class="inline-form">
+    <select name="to_user_id" required>
+      <option value="">Кому передать</option>
+      <% otherUsers.forEach(u => { %><option value="<%= u.id %>"><%= u.display_name %></option><% }) %>
+    </select>
+    <button type="submit">Предложить</button>
+  </form>
+<% } else { %>
+  <h2>Забрать задачу себе</h2>
+  <p class="muted">Задачу можно перенять только с согласия текущего исполнителя.</p>
+  <form method="post" action="/tasks/<%= task.id %>/transfer/request">
+    <button type="submit">Запросить себе</button>
+  </form>
+<% } %>
+
+<% if (isCreator) { %>
+  <hr>
+  <form method="post" action="/tasks/<%= task.id %>/delete" onsubmit="return confirm('Удалить задачу?')">
+    <button type="submit" class="danger">Удалить задачу</button>
+  </form>
+<% } %>
+<%- include('partials/footer') %>

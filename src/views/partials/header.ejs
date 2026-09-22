@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskTracker</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<% if (currentUser) { %>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark">✓</span>TaskTracker</a>
+    <label class="nav-toggle" for="nav-toggle-cb">☰</label>
+    <input type="checkbox" id="nav-toggle-cb" class="nav-toggle-cb">
+    <nav>
+      <a href="/" class="<%= path === '/' ? 'active' : '' %>">Дашборд</a>
+      <a href="/tasks" class="<%= path.startsWith('/tasks') ? 'active' : '' %>">Задачи</a>
+      <a href="/shopping" class="<%= path.startsWith('/shopping') ? 'active' : '' %>">Покупки</a>
+      <a href="/progress" class="<%= path.startsWith('/progress') ? 'active' : '' %>">Прогресс</a>
+      <a href="/transfers" class="<%= path.startsWith('/transfers') ? 'active' : '' %>">Передачи<% if (pendingTransferCount > 0) { %><span class="badge"><%= pendingTransferCount %></span><% } %></a>
+      <a href="/notifications" class="<%= path.startsWith('/notifications') ? 'active' : '' %>">🔔<% if (unreadNotifications > 0) { %><span class="badge"><%= unreadNotifications %></span><% } %></a>
+    </nav>
+    <form action="/logout" method="post" class="logout-form">
+      <span class="who"><%= currentUser.display_name %></span>
+      <button type="submit" class="ghost-btn">Выйти</button>
+    </form>
+  </div>
+</header>
+<% } %>
+<main class="container">

@@ -1,0 +1,36 @@
+<%- include('partials/header') %>
+<h1>Задачи</h1>
+
+<form method="get" action="/tasks" class="filters">
+  <label>Сфера
+    <select name="sphere" onchange="this.form.submit()">
+      <option value="">Все</option>
+      <% spheres.forEach(s => { %>
+        <option value="<%= s.id %>" <%= sphereId === s.id ? 'selected' : '' %>><%= s.name %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label><input type="checkbox" name="mine" value="1" <%= onlyMine ? 'checked' : '' %> onchange="this.form.submit()"> Только мои</label>
+</form>
+
+<% if (!rows.length) { %>
+  <p class="muted">Ничего не найдено.</p>
+<% } %>
+<ul class="task-list">
+  <% rows.forEach(({ t, target, amount, done }) => { %>
+    <li class="task-row <%= done ? 'done' : '' %>">
+      <span class="tag tag-<%= helpers.sphereColor(t.sphere_id) %>"><%= t.sphere_name %></span>
+      <a href="/tasks/<%= t.id %>"><%= t.title %></a>
+      <span class="period muted"><%= helpers.periodLabel(t) %></span>
+      <span class="assignee muted">→ <%= t.assignee_name %></span>
+      <% if (target > 1) { %>
+        <span class="frac <%= done ? 'frac-done' : '' %>"><%= amount %>/<%= target %></span>
+      <% } else if (done) { %>
+        <span class="badge-ok">выполнено</span>
+      <% } %>
+    </li>
+  <% }) %>
+</ul>
+
+<p><a href="/tasks/new" class="button">+ Новая задача</a></p>
+<%- include('partials/footer') %>

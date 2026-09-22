@@ -1,0 +1,6 @@
+<%- include('partials/header') %>
+<h1>Редактировать задачу</h1>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<%- include('partials/task-form', { task, spheres, weekdays, action: `/tasks/${task.id}/edit`, submitLabel: 'Сохранить' }) %>
+<p><a href="/tasks/<%= task.id %>">← Назад к задаче</a></p>
+<%- include('partials/footer') %>

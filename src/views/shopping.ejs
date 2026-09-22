@@ -1,0 +1,34 @@
+<%- include('partials/header') %>
+<h1>Покупки</h1>
+
+<% lists.forEach(({ list, items }) => { %>
+  <section class="shopping-list">
+    <h2><%= list.name %> <% if (list.owner_id === null) { %><span class="tag">общий</span><% } %></h2>
+    <ul class="item-list">
+      <% items.forEach(item => { %>
+        <li class="<%= item.is_bought ? 'bought' : '' %>">
+          <form method="post" action="/shopping/items/<%= item.id %>/toggle" class="inline-form">
+            <button type="submit" class="checkbox-btn"><%= item.is_bought ? '☑' : '☐' %></button>
+          </form>
+          <span class="item-name"><%= item.name %></span>
+          <span class="muted small">(<%= item.added_by_name %>)</span>
+          <form method="post" action="/shopping/items/<%= item.id %>/delete" class="inline-form">
+            <button type="submit" class="danger small">✕</button>
+          </form>
+        </li>
+      <% }) %>
+      <% if (!items.length) { %><li class="muted">Список пуст.</li><% } %>
+    </ul>
+    <form method="post" action="/shopping/lists/<%= list.id %>/items" class="inline-form">
+      <input type="text" name="name" placeholder="Добавить покупку" required>
+      <button type="submit">+</button>
+    </form>
+  </section>
+<% }) %>
+
+<h2>Новый личный список</h2>
+<form method="post" action="/shopping/lists" class="inline-form">
+  <input type="text" name="name" placeholder="Название списка" required>
+  <button type="submit">Создать</button>
+</form>
+<%- include('partials/footer') %>

@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+<h1>Прогресс</h1>
+
+<% byUser.forEach(({ user, spheres }) => { %>
+  <section class="user-block">
+    <h2><%= user.display_name %><% if (currentUser.id === user.id) { %> <span class="muted">(вы)</span><% } %></h2>
+
+    <% if (!spheres.length) { %><p class="muted">Нет активных задач.</p><% } %>
+
+    <% spheres.forEach(({ sphere, tasks }) => { %>
+      <h3 class="sphere-heading"><span class="tag tag-<%= helpers.sphereColor(sphere.id) %>"><%= sphere.name %></span></h3>
+      <div class="tile-grid">
+        <% tasks.forEach(({ task, target, amount, done, streak, history }) => { %>
+          <a class="tile <%= done ? 'tile-done' : '' %>" href="/tasks/<%= task.id %>">
+            <div class="tile-title"><%= task.title %></div>
+            <div class="tile-period muted"><%= helpers.periodLabel(task) %></div>
+            <div class="progress-bar"><div class="progress-fill <%= done ? 'filled' : '' %>" style="width: <%= helpers.pct(amount, target) %>%"></div></div>
+            <div class="tile-foot">
+              <span class="frac <%= done ? 'frac-done' : '' %>"><%= amount %>/<%= target %></span>
+              <% if (streak > 0) { %><span class="streak">🔥 <%= streak %></span><% } %>
+            </div>
+            <div class="history-dots small">
+              <% history.forEach(h => { %>
+                <span class="dot <%= h.done ? 'dot-done' : (h.amount > 0 ? 'dot-partial' : 'dot-empty') %>"></span>
+              <% }) %>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% }) %>
+  </section>
+<% }) %>
+<%- include('partials/footer') %>

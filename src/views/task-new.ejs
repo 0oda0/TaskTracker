@@ -1,0 +1,5 @@
+<%- include('partials/header') %>
+<h1>Новая задача</h1>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<%- include('partials/task-form', { task: null, spheres, users, weekdays, action: '/tasks', submitLabel: 'Создать' }) %>
+<%- include('partials/footer') %>
