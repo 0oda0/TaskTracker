@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const repo = require("../repo");
 
 const router = express.Router();
@@ -14,7 +15,7 @@ router.get("/users", (req, res) => {
 router.get("/users/:id", (req, res) => {
   const detail = repo.adminUserDetail(req.params.id);
   if (!detail) return res.status(404).render("404");
-  res.render("admin-user-detail", { ...detail, error: null });
+  res.render("admin-user-detail", { ...detail, error: null, resetPassword: null });
 });
 
 router.post("/users/:id/role", (req, res) => {
@@ -22,9 +23,17 @@ router.post("/users/:id/role", (req, res) => {
   const { error } = repo.setUserRole(targetId, req.body.role === "admin" ? "admin" : "user", req.user.id);
   if (error) {
     const detail = repo.adminUserDetail(targetId);
-    return res.status(400).render("admin-user-detail", { ...detail, error });
+    return res.status(400).render("admin-user-detail", { ...detail, error, resetPassword: null });
   }
   res.redirect(`/admin/users/${targetId}`);
+});
+
+router.post("/users/:id/reset-password", (req, res) => {
+  const targetId = Number(req.params.id);
+  const { error } = repo.adminResetPassword(targetId, req.body.new_password, bcrypt);
+  const detail = repo.adminUserDetail(targetId);
+  if (error) return res.status(400).render("admin-user-detail", { ...detail, error, resetPassword: null });
+  res.render("admin-user-detail", { ...detail, error: null, resetPassword: req.body.new_password });
 });
 
 router.post("/users/:id/delete", (req, res) => {

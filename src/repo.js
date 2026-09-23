@@ -266,10 +266,15 @@ function isCompletedForCurrentPeriod(task, now = new Date()) {
 
 // Logs `amount` toward the current period. Boolean tasks (no target_count)
 // are idempotent - clicking "done" twice in the same period is a no-op.
+// A finished 'once' task has nothing left to ever do again, so it's
+// archived immediately instead of sitting in the active list forever.
 function completeTask(task, userId, amount = 1, now = new Date()) {
   if (!task.target_count && isCompletedForCurrentPeriod(task, now)) return;
   const key = periodKey(task.period_type, now);
   db.prepare("INSERT INTO task_completions (task_id, user_id, period_key, amount) VALUES (?, ?, ?, ?)").run(task.id, userId, key, amount);
+  if (task.period_type === "once" && periodAmount(task.id, key) >= effectiveTarget(task)) {
+    db.prepare("UPDATE tasks SET status = 'archived' WHERE id = ?").run(task.id);
+  }
 }
 
 function lifetimeTotal(taskId) {
@@ -634,6 +639,16 @@ function changePassword(userId, currentPassword, newPassword, bcrypt) {
   return { sessionVersion };
 }
 
+// Admin-initiated reset - there's no email flow to recover a forgotten
+// password otherwise, so this is the only way back in for someone locked
+// out. Bumps session_version so any stale session also gets invalidated.
+function adminResetPassword(userId, newPassword, bcrypt) {
+  if (!newPassword || newPassword.length < 6) return { error: "Пароль от 6 символов" };
+  const hash = bcrypt.hashSync(newPassword, 10);
+  db.prepare("UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?").run(hash, userId);
+  return {};
+}
+
 // --- settings (key/value) ---
 
 function getSetting(key) {
@@ -661,6 +676,6 @@ module.exports = {
   sendSupportMessage, sendAdminReply, listSupportThread, markSupportReadByUser, markSupportReadByAdmin,
   unreadSupportForUser, listSupportInbox, unreadSupportTotalForAdmin,
   isAdmin, adminCount, setUserRole, adminUserDetail, adminStats, eraseUser,
-  updateProfile, setTheme, regenerateFriendCode, changePassword,
+  updateProfile, setTheme, regenerateFriendCode, changePassword, adminResetPassword,
   getSetting, setSetting,
 };

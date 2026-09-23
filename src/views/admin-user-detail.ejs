@@ -2,6 +2,7 @@
 <h1><%= user.display_name %></h1>
 <p><a href="/admin/users">← Пользователи</a></p>
 <% if (error) { %><p class="error"><%= error %></p><% } %>
+<% if (resetPassword) { %><p class="badge-ok">Новый пароль для @<%= user.username %>: <code><%= resetPassword %></code> — сообщите его пользователю, здесь он больше не будет виден.</p><% } %>
 
 <div class="card" style="padding: 1.2rem 1.3rem">
   <p>Логин: <strong>@<%= user.username %></strong></p>
@@ -15,6 +16,14 @@
       <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>admin</option>
     </select>
     <button type="submit">Изменить роль</button>
+  </form>
+</div>
+
+<div class="card" style="padding: 1.2rem 1.3rem; margin-top: 1rem">
+  <p class="muted">Сбросить пароль, если человек его забыл — пути через email нет, только так.</p>
+  <form method="post" action="/admin/users/<%= user.id %>/reset-password" class="inline-form">
+    <input type="text" name="new_password" placeholder="Новый пароль (от 6 символов)" required minlength="6">
+    <button type="submit">Сбросить пароль</button>
   </form>
 </div>
 

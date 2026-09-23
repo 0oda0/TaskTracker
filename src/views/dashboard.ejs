@@ -5,6 +5,10 @@
   <p class="notice"><a href="/transfers">У вас <%= incomingCount %> запрос(а) на передачу задач →</a></p>
 <% } %>
 
+<% if (friendCount === 0) { %>
+  <p class="notice">Пока нет друзей — <a href="/friends">добавьте по коду</a>, чтобы назначать задачи друг другу и видеть прогресс.</p>
+<% } %>
+
 <% if (overdue.length) { %>
   <h2>Просрочено</h2>
   <ul class="task-list">

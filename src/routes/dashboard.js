@@ -26,8 +26,9 @@ router.get("/", (req, res) => {
   }
 
   const incomingTransfers = repo.listIncomingTransfers(req.user.id);
+  const friendCount = repo.listFriends(req.user.id).length;
 
-  res.render("dashboard", { today, overdue, incomingCount: incomingTransfers.length });
+  res.render("dashboard", { today, overdue, incomingCount: incomingTransfers.length, friendCount });
 });
 
 module.exports = router;

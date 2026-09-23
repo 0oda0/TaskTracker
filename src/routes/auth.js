@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const repo = require("../repo");
+const { isRateLimited, recordFailure, recordSuccess } = require("../rate-limit");
 
 const router = express.Router();
 
@@ -11,10 +12,21 @@ router.get("/login", (req, res) => {
 router.post("/login", (req, res) => {
   const username = (req.body.username || "").trim();
   const password = req.body.password || "";
+  const ipKey = `ip:${req.ip}`;
+  const userKey = `user:${username}`;
+
+  if (isRateLimited(ipKey) || isRateLimited(userKey)) {
+    return res.status(429).render("login", { error: "Слишком много попыток. Подождите 15 минут." });
+  }
+
   const row = repo.getUserAuthRow(username);
   if (!row || !bcrypt.compareSync(password, row.password_hash)) {
+    recordFailure(ipKey);
+    recordFailure(userKey);
     return res.status(401).render("login", { error: "Неверный логин или пароль" });
   }
+  recordSuccess(ipKey);
+  recordSuccess(userKey);
   req.session.userId = row.id;
   req.session.sv = row.session_version;
   res.redirect("/");
